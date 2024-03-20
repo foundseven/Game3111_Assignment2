@@ -526,15 +526,24 @@ void TreeBillboardsApp::UpdateMainPassCB(const GameTimer& gt)
 	mMainPassCB.FarZ = 1000.0f;
 	mMainPassCB.TotalTime = gt.TotalTime();
 	mMainPassCB.DeltaTime = gt.DeltaTime();
-	mMainPassCB.AmbientLight = { 0.25f, 0.25f, 0.35f, 1.0f };
+	mMainPassCB.AmbientLight = { 0.47f, 0.47f, 0.47f, 1.2f };
 	mMainPassCB.Lights[0].Direction = { 0.57735f, -0.57735f, 0.57735f };
-	mMainPassCB.Lights[0].Strength = { 0.6f, 0.6f, 0.6f };
+	mMainPassCB.Lights[0].Strength = { 1.2f, 0.4f, 0.4f };
 	mMainPassCB.Lights[1].Direction = { -0.57735f, -0.57735f, 0.57735f };
-	mMainPassCB.Lights[1].Strength = { 0.3f, 0.3f, 0.3f };
+	mMainPassCB.Lights[1].Strength = { 0.02f, 0.02f, 0.02f };
 	mMainPassCB.Lights[2].Direction = { 0.0f, -0.707f, -0.707f };
-	mMainPassCB.Lights[2].Strength = { 0.15f, 0.15f, 0.15f };
+	mMainPassCB.Lights[2].Strength = { 0.05f, 0.05f, 0.05f };
 
 	//ADDING SOME MORE LIGHTS HERE 
+	//spot light
+	mMainPassCB.Lights[3].Position = { 0.0f, 10.0f, 0.0f };
+	mMainPassCB.Lights[3].Direction = { 0.0f, 0.0f, 0.0f };
+	mMainPassCB.Lights[2].Strength = { 1.1f, 0.0f, 0.2f };
+	mMainPassCB.Lights[2].SpotPower = 1.7f;
+
+	//one more
+	mMainPassCB.Lights[4].Position = { 0.0f, 10.0f, 0.0f };
+	mMainPassCB.Lights[4].Strength = { 1000.1f, 0.0f, 100.2f };
 
 	auto currPassCB = mCurrFrameResource->PassCB.get();
 	currPassCB->CopyData(0, mMainPassCB);
@@ -848,7 +857,7 @@ void TreeBillboardsApp::BuildLandGeometry()
 		float centerZ = 0;
 
 		// Calculate the border size
-		float borderSize = 40.0f;
+		float borderSize = 45.0f;
 
 		// Height adjustment
         if (p.x > centerX - borderSize && p.x < centerX + borderSize && 
@@ -1233,8 +1242,8 @@ void TreeBillboardsApp::BuildTreeSpritesGeometry()
 	std::array<TreeSpriteVertex, 16> vertices;
 	for(UINT i = 0; i < treeCount; ++i)
 	{
-		float x = MathHelper::RandF(-25.0f, 45.0f); //for the trees
-		float z = MathHelper::RandF(-45.0f, 45.0f); //for the trees
+		float x = MathHelper::RandF(-30.0f, 68.0f); //for the trees
+		float z = MathHelper::RandF(-45.0f, 55.0f); //for the trees
 		float y = GetHillsHeight(x, z);
 
 		// Move tree slightly above land height.
@@ -1517,14 +1526,20 @@ void TreeBillboardsApp::BuildRenderItems()
 	CreateNewObject("quad", XMMatrixScaling(15.0f, 15.5f, 15.0f),
 		XMMatrixTranslation(-22.0f, 1.0f, -39.0f), 
 		XMMatrixRotationRollPitchYaw(0.f, 0.f, 0.f),
-		objCBIndex, "grass");
+		objCBIndex, "stone");
 
-	//tri prism - TOMB - NEED TO FLIP
+	//tri prism - TOMB
 	objCBIndex++;
-	CreateNewObject("triprism", XMConvertToRadians(90) * XMMatrixScaling(3.0f, 15.0f, 3.0f),
-		XMMatrixTranslation(0.0f, 7.0f, 15.0f),
+	CreateNewObject("triprism", XMMatrixRotationAxis({ 0,0,1,0 }, XMConvertToRadians(90)) * XMMatrixScaling(15.0f, 3.0f, 3.0f),
+		XMMatrixTranslation(0.0f, 5.5f, 18.0f),
 		XMMatrixRotationRollPitchYaw(0.f, 0.f, 0.f),
 		objCBIndex, "stone");
+
+	objCBIndex++;
+	CreateNewObject("box", XMMatrixScaling(3.7f, 1.2f, 1.2f),
+		XMMatrixTranslation(0.0f, 2.5f, 18.0f),
+		XMMatrixRotationRollPitchYaw(0.f, 0.f, 0.f),
+		objCBIndex, "marble");
 
 	//pyramid - BUSH
 	objCBIndex++;
@@ -1543,16 +1558,16 @@ void TreeBillboardsApp::BuildRenderItems()
 	//geosphere
 	objCBIndex++;
 	CreateNewObject("geosphere", XMMatrixScaling(5.0f, 5.0f, 5.0f),
-		XMMatrixTranslation(0.0f, 60.0f, 35.0f),  
+		XMMatrixTranslation(0.0f, 50.0f, 35.0f),  
 		XMMatrixRotationRollPitchYaw(0.f, 0.f, 0.f),
 		objCBIndex, "sun");
 
 	//diamond
 	objCBIndex++;
-	CreateNewObject("diamond", XMMatrixScaling(2.0f, 2.0f, 2.0f),
-		XMMatrixTranslation(0.0f, 15.0f, 15.0f),
+	CreateNewObject("diamond", XMMatrixScaling(4.0f, 4.0f, 4.0f),
+		XMMatrixTranslation(0.0f, 10.0f, 18.0f),
 		XMMatrixRotationRollPitchYaw(0.f, 0.f, 0.f),
-		objCBIndex, "grass");
+		objCBIndex, "diamond");
 
 	//BUILDING WALLS FOR MONUMENT
 	objCBIndex++;
@@ -1579,6 +1594,56 @@ void TreeBillboardsApp::BuildRenderItems()
 		XMMatrixRotationRollPitchYaw(0.f, 0.f, 0.f),
 		objCBIndex, "marble");
 
+	//tops for the pillars
+	objCBIndex++;
+	CreateNewObject("box", XMMatrixScaling(10.3f, 0.2f, 0.5f),
+		XMMatrixTranslation(0.0f, 22.5f, 30.0f),
+		XMMatrixRotationRollPitchYaw(0.f, 0.f, 0.f),
+		objCBIndex, "marble");
+
+	objCBIndex++;
+	CreateNewObject("box", XMMatrixScaling(10.3f, 0.2f, 0.5f),
+		XMMatrixTranslation(0.0f, 22.5f, -30.0f),
+		XMMatrixRotationRollPitchYaw(0.f, 0.f, 0.f),
+		objCBIndex, "marble");
+
+	objCBIndex++;
+	CreateNewObject("box", XMMatrixScaling(0.5f, 0.2f, 13.0f),
+		XMMatrixTranslation(22.0f, 22.5f, 0.0f),
+		XMMatrixRotationRollPitchYaw(0.f, 0.f, 0.f),
+		objCBIndex, "marble");
+
+	objCBIndex++;
+	CreateNewObject("box", XMMatrixScaling(0.5f, 0.2f, 13.0f),
+		XMMatrixTranslation(-22.0f, 22.5f, 0.0f),
+		XMMatrixRotationRollPitchYaw(0.f, 0.f, 0.f),
+		objCBIndex, "marble");
+
+	//bottoms for the pillars
+	objCBIndex++;
+	CreateNewObject("box", XMMatrixScaling(10.3f, 0.2f, 0.5f),
+		XMMatrixTranslation(0.0f, 2.5f, 32.0f),
+		XMMatrixRotationRollPitchYaw(0.f, 0.f, 0.f),
+		objCBIndex, "marble");
+
+	objCBIndex++;
+	CreateNewObject("box", XMMatrixScaling(10.3f, 0.2f, 0.5f),
+		XMMatrixTranslation(0.0f, 2.5f, -32.0f),
+		XMMatrixRotationRollPitchYaw(0.f, 0.f, 0.f),
+		objCBIndex, "marble");
+
+	objCBIndex++;
+	CreateNewObject("box", XMMatrixScaling(0.5f, 0.2f, 14.0f),
+		XMMatrixTranslation(22.0f, 2.5f, 0.0f),
+		XMMatrixRotationRollPitchYaw(0.f, 0.f, 0.f),
+		objCBIndex, "marble");
+
+	objCBIndex++;
+	CreateNewObject("box", XMMatrixScaling(0.5f, 0.2f, 14.0f),
+		XMMatrixTranslation(-22.0f, 2.5f, 0.0f),
+		XMMatrixRotationRollPitchYaw(0.f, 0.f, 0.f),
+		objCBIndex, "marble");
+
 	//need to add the tops and bottoms for the pillars
 
 	// CLOCK TOWER
@@ -1599,10 +1664,16 @@ void TreeBillboardsApp::BuildRenderItems()
 		XMMatrixRotationRollPitchYaw(0.f, 0.f, 0.f),
 		objCBIndex, "stone");
 
-	//torus - NEED TO FLIP - WHY WONT YOU CHANGE MAT
+	//torus - WHY WONT YOU CHANGE MAT
 	objCBIndex++;
-	CreateNewObject("torus", XMMatrixScaling(3.0f, 3.0f, 3.0f),
-		XMMatrixTranslation(0.0f, 25.0f, 0.0f),
+	CreateNewObject("torus", XMMatrixRotationAxis({ 1,0,0,0 }, XMConvertToRadians(90)) * XMMatrixScaling(2.5f, 2.5f, 2.5f),
+		XMMatrixTranslation(0.0f, 25.0f, -4.0f),
+		XMMatrixRotationRollPitchYaw(0.f, 0.f, 0.f),
+		objCBIndex, "stone");
+
+	objCBIndex++;
+	CreateNewObject("torus", XMMatrixRotationAxis({ 1,0,0,0 }, XMConvertToRadians(90))* XMMatrixScaling(2.5f, 2.5f, 2.5f),
+		XMMatrixTranslation(0.0f, 25.0f, 4.0f),
 		XMMatrixRotationRollPitchYaw(0.f, 0.f, 0.f),
 		objCBIndex, "stone");
 
@@ -1626,17 +1697,17 @@ void TreeBillboardsApp::BuildRenderItems()
 
 		//right wedge
 		objCBIndex++;
-		CreateNewObject("wedge", XMMatrixScaling(3.0f, 3.5f, 3.0f),
-			XMMatrixTranslation(24.0f, 5.0f, -25.0f + i * 10.0f),
+		CreateNewObject("wedge", XMMatrixRotationAxis({ 0,1,0,0 }, XMConvertToRadians(270)) * XMMatrixScaling(3.5f, 4.0f, 3.5f),
+			XMMatrixTranslation(24.0f, 4.0f, -25.0f + i * 10.0f),
 			XMMatrixRotationRollPitchYaw(0.f, 0.f, 0.f),
-			objCBIndex, "grass");
+			objCBIndex, "marble");
 
 		//left wedge
 		objCBIndex++;
-		CreateNewObject("wedge", XMMatrixScaling(3.0f, 3.5f, 3.0f),
-			XMMatrixTranslation(-24.0f, 5.0f, -25.0f + i * 10.0f),
+		CreateNewObject("wedge", XMMatrixRotationAxis({ 0,1,0,0 }, XMConvertToRadians(90)) * XMMatrixScaling(3.5f, 4.0f, 3.5f),
+			XMMatrixTranslation(-24.0f, 4.0f, -25.0f + i * 10.0f),
 			XMMatrixRotationRollPitchYaw(0.f, 0.f, 0.f),
-			objCBIndex, "grass");
+			objCBIndex, "marble");
 
 		//right cone
 		objCBIndex++;
