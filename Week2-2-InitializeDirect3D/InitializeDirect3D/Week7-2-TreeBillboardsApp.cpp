@@ -655,6 +655,15 @@ void TreeBillboardsApp::LoadTextures()
 		mCommandList.Get(), bushTex->Filename.c_str(),
 		bushTex->Resource, bushTex->UploadHeap));
 
+	//wood mat
+	auto woodTex = std::make_unique<Texture>();
+	woodTex->Name = "woodTex";
+	woodTex->Filename = L"../../Textures/wood.dds";
+	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
+		mCommandList.Get(), woodTex->Filename.c_str(),
+		woodTex->Resource, woodTex->UploadHeap));
+
+	//trees mat
 	auto treeArrayTex = std::make_unique<Texture>();
 	treeArrayTex->Name = "treeArrayTex";
 	treeArrayTex->Filename = L"../../Textures/treeArray.dds";
@@ -676,6 +685,8 @@ void TreeBillboardsApp::LoadTextures()
 	mTextures[diamondTex->Name] = std::move(diamondTex);
 	//bush
 	mTextures[bushTex->Name] = std::move(bushTex);
+	//wood
+	mTextures[woodTex->Name] = std::move(woodTex);
 	//tree
 	mTextures[treeArrayTex->Name] = std::move(treeArrayTex);
 }
@@ -726,7 +737,7 @@ void TreeBillboardsApp::BuildDescriptorHeaps()
 	// Create the SRV heap.
 	//
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-	srvHeapDesc.NumDescriptors = 9;
+	srvHeapDesc.NumDescriptors = 10;
 	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	ThrowIfFailed(md3dDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&mSrvDescriptorHeap)));
@@ -750,6 +761,8 @@ void TreeBillboardsApp::BuildDescriptorHeaps()
 	auto diamondTex = mTextures["diamondTex"]->Resource;
 	//BUSH HEAP//
 	auto bushTex = mTextures["bushTex"]->Resource;
+	//WOOD HEAP//
+	auto woodTex = mTextures["woodTex"]->Resource;
 	// TREE HEAP //
 	auto treeArrayTex = mTextures["treeArrayTex"]->Resource;
 
@@ -807,6 +820,13 @@ void TreeBillboardsApp::BuildDescriptorHeaps()
 	srvDesc.Format = bushTex->GetDesc().Format;
 	srvDesc.Texture2D.MipLevels = bushTex->GetDesc().MipLevels;
 	md3dDevice->CreateShaderResourceView(bushTex.Get(), &srvDesc, hDescriptor);
+
+	//next descriptor (wood)
+	hDescriptor.Offset(1, mCbvSrvDescriptorSize);
+
+	srvDesc.Format = woodTex->GetDesc().Format;
+	srvDesc.Texture2D.MipLevels = woodTex->GetDesc().MipLevels;
+	md3dDevice->CreateShaderResourceView(woodTex.Get(), &srvDesc, hDescriptor);
 
 	// next descriptor
 	hDescriptor.Offset(1, mCbvSrvDescriptorSize);
@@ -1485,6 +1505,7 @@ void TreeBillboardsApp::BuildMaterials()
 	diamond->FresnelR0 = XMFLOAT3(0.05f, 0.05f, 0.05f);
 	diamond->Roughness = 0.3f;
 
+	//bush mats
 	auto bush = std::make_unique<Material>();
 	bush->Name = "bush";
 	bush->MatCBIndex = 7;
@@ -1493,11 +1514,20 @@ void TreeBillboardsApp::BuildMaterials()
 	bush->FresnelR0 = XMFLOAT3(0.05f, 0.05f, 0.05f);
 	bush->Roughness = 0.3f;
 
+	//wood
+	auto wood = std::make_unique<Material>();
+	wood->Name = "wood";
+	wood->MatCBIndex = 8;
+	wood->DiffuseSrvHeapIndex = 8;
+	wood->DiffuseAlbedo = XMFLOAT4(Colors::LightSteelBlue);
+	wood->FresnelR0 = XMFLOAT3(0.05f, 0.05f, 0.05f);
+	wood->Roughness = 0.3f;
+
 	//leave tree last
 	auto treeSprites = std::make_unique<Material>();
 	treeSprites->Name = "treeSprites";
-	treeSprites->MatCBIndex = 8;
-	treeSprites->DiffuseSrvHeapIndex = 8;
+	treeSprites->MatCBIndex = 9;
+	treeSprites->DiffuseSrvHeapIndex = 9;
 	treeSprites->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	treeSprites->FresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
 	treeSprites->Roughness = 0.125f;
@@ -1510,6 +1540,7 @@ void TreeBillboardsApp::BuildMaterials()
 	mMaterials["sun"] = std::move(sun);
 	mMaterials["diamond"] = std::move(diamond);
 	mMaterials["bush"] = std::move(bush);
+	mMaterials["wood"] = std::move(wood);
 	mMaterials["treeSprites"] = std::move(treeSprites);
 
 }
@@ -1551,8 +1582,15 @@ void TreeBillboardsApp::BuildRenderItems()
 
 	//quad - DOOR
 	objCBIndex++;
+	CreateNewObject("quad", XMMatrixRotationAxis({ 1,0,0,0 }, XMConvertToRadians(90)) * XMMatrixScaling(30.0f, 15.5f, 62.0f),
+		XMMatrixTranslation(-45.0f, 10.0f, -30.0f), 
+		XMMatrixRotationRollPitchYaw(0.f, 0.f, 0.f),
+		objCBIndex, "stone");
+
+	//quad - Floor
+	objCBIndex++;
 	CreateNewObject("quad", XMMatrixScaling(15.0f, 15.5f, 15.0f),
-		XMMatrixTranslation(-22.0f, 1.0f, -39.0f), 
+		XMMatrixTranslation(-22.0f, 1.0f, -39.0f),
 		XMMatrixRotationRollPitchYaw(0.f, 0.f, 0.f),
 		objCBIndex, "stone");
 
@@ -1572,16 +1610,28 @@ void TreeBillboardsApp::BuildRenderItems()
 	//pyramid - BUSH
 	objCBIndex++;
 	CreateNewObject("pyramid", XMMatrixScaling(4.0f, 4.0f, 4.0f),
-		XMMatrixTranslation(-30.0f, 6.0f, -22.0f),
+		XMMatrixTranslation(-32.0f, 9.0f, -22.0f),
 		XMMatrixRotationRollPitchYaw(0.f, 0.f, 0.f),
 		objCBIndex, "bush");
+
+	objCBIndex++;
+	CreateNewObject("cylinder", XMMatrixScaling(1.5f, 1.5f, 1.5f),
+		XMMatrixTranslation(-32.0f, 6.0f, -22.0f),
+		XMMatrixRotationRollPitchYaw(0.f, 0.f, 0.f),
+		objCBIndex, "wood");
 
 	//pyramid - BUSH 2
 	objCBIndex++;
 	CreateNewObject("pyramid", XMMatrixScaling(4.0f, 4.0f, 4.0f),
-		XMMatrixTranslation(30.0f, 6.0f, -22.0f),
+		XMMatrixTranslation(32.0f, 9.0f, -22.0f),
 		XMMatrixRotationRollPitchYaw(0.f, 0.f, 0.f),
 		objCBIndex, "bush");
+
+	objCBIndex++;
+	CreateNewObject("cylinder", XMMatrixScaling(1.5f, 1.5f, 1.5f),
+		XMMatrixTranslation(32.0f, 6.0f, -22.0f),
+		XMMatrixRotationRollPitchYaw(0.f, 0.f, 0.f),
+		objCBIndex, "wood");
 
 	//geosphere
 	objCBIndex++;
