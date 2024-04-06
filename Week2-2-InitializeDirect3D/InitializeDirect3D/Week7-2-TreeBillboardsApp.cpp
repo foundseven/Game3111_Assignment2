@@ -1,10 +1,7 @@
-/** @file Week7-2-TreeBillboardsApp.cpp
- *  @brief Tree Billboarding Demo
- *   Adding Billboarding to our previous Hills, Mountain, Crate, and Wave Demo
+﻿/** @file Week7-2-TreeBillboardsApp.cpp
  * 
  *   Controls:
- *   Hold the left mouse button down and move the mouse to rotate.
- *   Hold the right mouse button down and move the mouse to zoom in and out.
+ *   WASD To Move,  L Mouse Button to look around.
  *
  *  @author Hooman Salamat
  */
@@ -13,6 +10,7 @@
 #include "../../Common/MathHelper.h"
 #include "../../Common/UploadBuffer.h"
 #include "../../Common/GeometryGenerator.h"
+#include "../../Common/Camera.h"
 #include "FrameResource.h"
 #include "Waves.h"
 
@@ -107,6 +105,8 @@ private:
     void BuildFrameResources();
     void BuildMaterials();
     void BuildRenderItems();
+	//BUILDING COLLISION
+	//	bool CheckCameraCollision(FXMVECTOR predictPos);
     void DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& ritems);
 	void CreateNewObject(const char* item, XMMATRIX p, XMMATRIX q, XMMATRIX r, UINT ObjIndex, const char* material);
 	std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> GetStaticSamplers();
@@ -147,13 +147,23 @@ private:
 
     PassConstants mMainPassCB;
 
-	XMFLOAT3 mEyePos = { 0.0f, 0.0f, 0.0f };
-	XMFLOAT4X4 mView = MathHelper::Identity4x4();
-	XMFLOAT4X4 mProj = MathHelper::Identity4x4();
+	//Adding in First Person Camera
+	//Camera mCamera;
+	Camera mCamera;
+	float mCameraSpeed = 10.f;
 
-    float mTheta = 1.5f*XM_PI;
-    float mPhi = XM_PIDIV2 - 0.1f;
-    float mRadius = 50.0f;
+	//Bounding boxes for collision
+
+
+
+	//I WONT NEED THESE
+	//XMFLOAT3 mEyePos = { 0.0f, 0.0f, 0.0f };
+	//XMFLOAT4X4 mView = MathHelper::Identity4x4();
+	//XMFLOAT4X4 mProj = MathHelper::Identity4x4();
+
+    //float mTheta = 1.5f*XM_PI;
+    //float mPhi = XM_PIDIV2 - 0.1f;
+    //float mRadius = 50.0f;
 
     POINT mLastMousePos;
 };
@@ -226,6 +236,12 @@ bool TreeBillboardsApp::Initialize()
 	// so we have to query this information.
     mCbvSrvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
+	//setting the camera POS
+	mCamera.SetPosition(0.0f, 2.0f, 0.0f);
+
+	//bounding box POS 
+
+
     mWaves = std::make_unique<Waves>(128, 128, 1.0f, 0.03f, 4.0f, 0.2f); //change water size
  
 	LoadTextures();
@@ -257,15 +273,21 @@ void TreeBillboardsApp::OnResize()
     D3DApp::OnResize();
 
     // The window resized, so update the aspect ratio and recompute the projection matrix.
-    XMMATRIX P = XMMatrixPerspectiveFovLH(0.25f*MathHelper::Pi, AspectRatio(), 1.0f, 1000.0f);
-    XMStoreFloat4x4(&mProj, P);
+    //XMMATRIX P = XMMatrixPerspectiveFovLH(0.25f*MathHelper::Pi, AspectRatio(), 1.0f, 1000.0f);
+    //XMStoreFloat4x4(&mProj, P);
+
+	//camera resize
+	//When the window is resized, we no longer rebuild the projection matrix explicitly, 
+	//and instead delegate the work to the Camera class with SetLens:
+	mCamera.SetLens(0.25f * MathHelper::Pi, AspectRatio(), 1.0f, 1000.0f);
+
 }
 ///////////////////////// UPDATE ////////////////////////////////////
 
 void TreeBillboardsApp::Update(const GameTimer& gt)
 {
     OnKeyboardInput(gt);
-	UpdateCamera(gt);
+	//UpdateCamera(gt);
 
     // Cycle through the circular frame resource array.
     mCurrFrameResourceIndex = (mCurrFrameResourceIndex + 1) % gNumFrameResources;
@@ -383,24 +405,29 @@ void TreeBillboardsApp::OnMouseMove(WPARAM btnState, int x, int y)
         float dy = XMConvertToRadians(0.25f*static_cast<float>(y - mLastMousePos.y));
 
         // Update angles based on input to orbit camera around box.
-        mTheta += dx;
-        mPhi += dy;
+        //mTheta += dx;
+        //mPhi += dy;
 
         // Restrict the angle mPhi.
-        mPhi = MathHelper::Clamp(mPhi, 0.1f, MathHelper::Pi - 0.1f);
+        //mPhi = MathHelper::Clamp(mPhi, 0.1f, MathHelper::Pi - 0.1f);
+		
+		//step4: Instead of updating the angles based on input to orbit camera around scene, 
+		//we rotate the cameras look direction:
+		mCamera.Pitch(dy);
+		mCamera.RotateY(dx);
     }
-    else if((btnState & MK_RBUTTON) != 0)
-    {
-        // Make each pixel correspond to 0.2 unit in the scene.
-        float dx = 0.2f*static_cast<float>(x - mLastMousePos.x);
-        float dy = 0.2f*static_cast<float>(y - mLastMousePos.y);
+    //else if((btnState & MK_RBUTTON) != 0)
+    //{
+    //    // Make each pixel correspond to 0.2 unit in the scene.
+    //    float dx = 0.2f*static_cast<float>(x - mLastMousePos.x);
+    //    float dy = 0.2f*static_cast<float>(y - mLastMousePos.y);
 
-        // Update the camera radius based on input.
-        mRadius += dx - dy;
+    //    // Update the camera radius based on input.
+    //    mRadius += dx - dy;
 
-        // Restrict the radius.
-        mRadius = MathHelper::Clamp(mRadius, 5.0f, 150.0f);
-    }
+    //    // Restrict the radius.
+    //    mRadius = MathHelper::Clamp(mRadius, 5.0f, 150.0f);
+    //}
 
     mLastMousePos.x = x;
     mLastMousePos.y = y;
@@ -408,24 +435,43 @@ void TreeBillboardsApp::OnMouseMove(WPARAM btnState, int x, int y)
  
 void TreeBillboardsApp::OnKeyboardInput(const GameTimer& gt)
 {
+	//implement a func that will allow us to 
+	const float dt = gt.DeltaTime();
+
+	if (GetAsyncKeyState('W') & 0x8000) //most significant bit (MSB) is 1 when key is pressed (1000 000 000 000)
+		mCamera.Walk(10.0f * dt);
+
+	if (GetAsyncKeyState('S') & 0x8000)
+		mCamera.Walk(-10.0f * dt);
+
+	if (GetAsyncKeyState('A') & 0x8000)
+		mCamera.Strafe(-10.0f * dt);
+
+	if (GetAsyncKeyState('D') & 0x8000)
+		mCamera.Strafe(10.0f * dt);
+
+	//lets add q and e to go up and down
+
+	mCamera.UpdateViewMatrix();
+
 }
 ///////////////////////// UPDATING CAMERA ////////////////////////////////////
 
-void TreeBillboardsApp::UpdateCamera(const GameTimer& gt)
-{
-	// Convert Spherical to Cartesian coordinates.
-	mEyePos.x = mRadius*sinf(mPhi)*cosf(mTheta);
-	mEyePos.z = mRadius*sinf(mPhi)*sinf(mTheta);
-	mEyePos.y = mRadius*cosf(mPhi);
-
-	// Build the view matrix.
-	XMVECTOR pos = XMVectorSet(mEyePos.x, mEyePos.y, mEyePos.z, 1.0f);
-	XMVECTOR target = XMVectorZero();
-	XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
-
-	XMMATRIX view = XMMatrixLookAtLH(pos, target, up);
-	XMStoreFloat4x4(&mView, view);
-}
+//void TreeBillboardsApp::UpdateCamera(const GameTimer& gt)
+//{
+//	// Convert Spherical to Cartesian coordinates.
+//	mEyePos.x = mRadius*sinf(mPhi)*cosf(mTheta);
+//	mEyePos.z = mRadius*sinf(mPhi)*sinf(mTheta);
+//	mEyePos.y = mRadius*cosf(mPhi);
+//
+//	// Build the view matrix.
+//	XMVECTOR pos = XMVectorSet(mEyePos.x, mEyePos.y, mEyePos.z, 1.0f);
+//	XMVECTOR target = XMVectorZero();
+//	XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+//
+//	XMMATRIX view = XMMatrixLookAtLH(pos, target, up);
+//	XMStoreFloat4x4(&mView, view);
+//}
 ///////////////////////// SETTING UP ANIMATIONS ////////////////////////////////////
 
 void TreeBillboardsApp::AnimateMaterials(const GameTimer& gt)
@@ -505,8 +551,12 @@ void TreeBillboardsApp::UpdateMaterialCBs(const GameTimer& gt)
 
 void TreeBillboardsApp::UpdateMainPassCB(const GameTimer& gt)
 {
-	XMMATRIX view = XMLoadFloat4x4(&mView);
-	XMMATRIX proj = XMLoadFloat4x4(&mProj);
+	//XMMATRIX view = XMLoadFloat4x4(&mView);
+	//XMMATRIX proj = XMLoadFloat4x4(&mProj);
+	// 
+	//First Person Camera
+	XMMATRIX view = mCamera.GetView();
+	XMMATRIX proj = mCamera.GetProj();
 
 	XMMATRIX viewProj = XMMatrixMultiply(view, proj);
 	XMMATRIX invView = XMMatrixInverse(&XMMatrixDeterminant(view), view);
@@ -519,7 +569,9 @@ void TreeBillboardsApp::UpdateMainPassCB(const GameTimer& gt)
 	XMStoreFloat4x4(&mMainPassCB.InvProj, XMMatrixTranspose(invProj));
 	XMStoreFloat4x4(&mMainPassCB.ViewProj, XMMatrixTranspose(viewProj));
 	XMStoreFloat4x4(&mMainPassCB.InvViewProj, XMMatrixTranspose(invViewProj));
-	mMainPassCB.EyePosW = mEyePos;
+	//mMainPassCB.EyePosW = mEyePos;
+	mMainPassCB.EyePosW = mCamera.GetPosition3f();
+
 	mMainPassCB.RenderTargetSize = XMFLOAT2((float)mClientWidth, (float)mClientHeight);
 	mMainPassCB.InvRenderTargetSize = XMFLOAT2(1.0f / mClientWidth, 1.0f / mClientHeight);
 	mMainPassCB.NearZ = 1.0f;
@@ -888,17 +940,19 @@ void TreeBillboardsApp::BuildLandGeometry()
     for(size_t i = 0; i < grid.Vertices.size(); ++i)
     {
 		auto& p = grid.Vertices[i].Position;
-		vertices[i].Pos.x = -p.z; //rotates grass terrain 90 degrees counter clockwise
-		vertices[i].Pos.z = p.x; //defining the z coordinate
+		vertices[i].Pos.x = -p.z; //rotate 90 degreees counter clockwise
+		vertices[i].Pos.z = p.x; //define the z coordinate
 
-		// Calculate the center of the grid
+		// Calculate the center of the grid aka 0
 		float centerX = 0;
 		float centerZ = 0;
 
-		// Calculate the border size
+		// Calculate the border size - CHOOSE 45
 		float borderSize = 45.0f;
 
-		// Height adjustment
+		//Height adjustment - checking to make sure the vertex is within a certain POS. 
+		//as long as it is within the range of 45 keep it 2
+		//otherwise dip down to -10
         if (p.x > centerX - borderSize && p.x < centerX + borderSize && 
             p.z > centerZ - borderSize && p.z < centerZ + borderSize)
         {
